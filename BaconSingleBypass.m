@@ -156,47 +156,20 @@
 
 @end
 
-// Lấy UIWindow phù hợp cho cả iOS 13 đến iOS 18
-static UIWindow *getKeyWindow(void) {
-    UIWindow *window = nil;
-    if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-            if (scene.activationState == UISceneActivationStateForegroundActive &&
-                [scene isKindOfClass:[UIWindowScene class]]) {
-                for (UIWindow *w in ((UIWindowScene *)scene).windows) {
-                    if (w.isKeyWindow) { window = w; break; }
-                }
-                if (!window && ((UIWindowScene *)scene).windows.count > 0) {
-                    window = ((UIWindowScene *)scene).windows.firstObject;
-                }
-            }
-            if (window) break;
-        }
+// Cửa sổ trong suốt cho phép chạm xuyên qua màn hình game
+@interface BaconTouchThroughWindow : UIWindow
+@end
+
+@implementation BaconTouchThroughWindow
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    UIView *hitView = [super hitTest:point withEvent:event];
+    if (hitView == self || hitView == self.rootViewController.view) {
+        return nil; // Không bấm trúng nút/menu thì nhường thao tác cho Roblox
     }
-    if (!window) {
-        #pragma clang diagnostic push
-        #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        window = UIApplication.sharedApplication.keyWindow;
-        #pragma clang diagnostic pop
-    }
-    return window;
+    return hitView;
 }
+@end
 
-void BaconShowMenu(void) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        UIWindow *window = getKeyWindow();
-        if (!window) return;
-
-        UIViewController *top = window.rootViewController;
-        while (top.presentedViewController) top = top.presentedViewController;
-
-        BaconViewController *vc = [BaconViewController new];
-        vc.modalPresentationStyle = UIModalPresentationPageSheet;
-        [top presentViewController:vc animated:YES completion:nil];
-    });
-}
-
-// Nút bấm tròn nổi có thể kéo thả tự do
 @interface BaconFloatingButton : UIButton
 @end
 
@@ -204,7 +177,7 @@ void BaconShowMenu(void) {
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.backgroundColor = [UIColor colorWithRed:.80 green:0 blue:1 alpha:0.9];
+        self.backgroundColor = [UIColor colorWithRed:0.8 green:0 blue:1 alpha:0.95];
         [self setTitle:@"B" forState:UIControlStateNormal];
         [self setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
         self.titleLabel.font = [UIFont boldSystemFontOfSize:22];
@@ -229,31 +202,61 @@ void BaconShowMenu(void) {
 }
 
 - (void)btnTapped {
-    BaconShowMenu();
+    UIViewController *root = self.window.rootViewController;
+    if (root) {
+        BaconViewController *vc = [BaconViewController new];
+        vc.modalPresentationStyle = UIModalPresentationPageSheet;
+        [root presentViewController:vc animated:YES completion:nil];
+    }
 }
 @end
 
-static void tryAttachButton(void) {
-    static BOOL attached = NO;
-    if (attached) return;
+static BaconTouchThroughWindow *overlayWindow = nil;
+
+static void initOverlay(void) {
+    static BOOL created = NO;
+    if (created) return;
 
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIWindow *win = getKeyWindow();
-        if (win && ![win viewWithTag:999888]) {
-            BaconFloatingButton *btn = [[BaconFloatingButton alloc] initWithFrame:CGRectMake(20, 150, 50, 50)];
-            btn.tag = 999888;
-            [win addSubview:btn];
-            [win bringSubviewToFront:btn];
-            attached = YES;
+        UIWindowScene *activeScene = nil;
+        if (@available(iOS 13.0, *)) {
+            for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+                if (scene.activationState == UISceneActivationStateForegroundActive && [scene isKindOfClass:[UIWindowScene class]]) {
+                    activeScene = (UIWindowScene *)scene;
+                    break;
+                }
+            }
         }
+
+        if (@available(iOS 13.0, *)) {
+            if (activeScene) {
+                overlayWindow = [[BaconTouchThroughWindow alloc] initWithWindowScene:activeScene];
+            }
+        }
+        if (!overlayWindow) {
+            overlayWindow = [[BaconTouchThroughWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+        }
+
+        overlayWindow.windowLevel = UIWindowLevelAlert + 1000.0;
+        overlayWindow.backgroundColor = [UIColor clearColor];
+
+        UIViewController *rootVC = [UIViewController new];
+        rootVC.view.backgroundColor = [UIColor clearColor];
+        overlayWindow.rootViewController = rootVC;
+
+        BaconFloatingButton *btn = [[BaconFloatingButton alloc] initWithFrame:CGRectMake(20, 200, 52, 52)];
+        [rootVC.view addSubview:btn];
+
+        [overlayWindow setHidden:NO];
+        created = YES;
     });
 }
 
-// Tự kích hoạt chạy ngay khi app load dylib
+// Chạy trực tiếp qua dynamic loader (dyld)
 __attribute__((constructor)) static void entryPoint(void) {
-    for (int i = 1; i <= 15; i++) {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(i * 1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            tryAttachButton();
+    for (int i = 1; i <= 10; i++) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(i * 1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            initOverlay();
         });
     }
 }
