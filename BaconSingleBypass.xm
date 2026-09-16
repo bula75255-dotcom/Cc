@@ -2,10 +2,10 @@
 #import <WebKit/WebKit.h>
 
 @interface BaconViewController : UIViewController <WKNavigationDelegate>
-@property(nonatomic,strong) WKWebView *webView;
-@property(nonatomic,strong) UITextField *urlField;
-@property(nonatomic,strong) UITextView *resultView;
-@property(nonatomic,strong) UILabel *statusLabel;
+@property(nonatomic, strong) WKWebView *webView;
+@property(nonatomic, strong) UITextField *urlField;
+@property(nonatomic, strong) UITextView *resultView;
+@property(nonatomic, strong) UILabel *statusLabel;
 @end
 
 @implementation BaconViewController
@@ -26,22 +26,19 @@
     [close setTitle:@"×" forState:UIControlStateNormal];
     [close setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
     close.titleLabel.font = [UIFont systemFontOfSize:28];
-    [close addTarget:self action:@selector(closeView)
-    forControlEvents:UIControlEventTouchUpInside];
+    [close addTarget:self action:@selector(closeView) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:close];
 
-    self.urlField = [[UITextField alloc] initWithFrame:CGRectMake(16, 60,
-        self.view.bounds.size.width - 32, 44)];
+    self.urlField = [[UITextField alloc] initWithFrame:CGRectMake(16, 60, self.view.bounds.size.width - 32, 44)];
     self.urlField.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     self.urlField.placeholder = @"Dán link vào đây...";
     self.urlField.attributedPlaceholder =
         [[NSAttributedString alloc] initWithString:@"Dán link vào đây..."
-                                         attributes:@{NSForegroundColorAttributeName:
-                                                      [UIColor colorWithWhite:1 alpha:.45]}];
+                                         attributes:@{NSForegroundColorAttributeName: [UIColor colorWithWhite:1 alpha:.45]}];
     self.urlField.textColor = UIColor.whiteColor;
     self.urlField.backgroundColor = [UIColor colorWithWhite:1 alpha:.10];
     self.urlField.layer.cornerRadius = 10;
-    self.urlField.leftView = [[UIView alloc] initWithFrame:CGRectMake(0,0,10,0)];
+    self.urlField.leftView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 10, 0)];
     self.urlField.leftViewMode = UITextFieldViewModeAlways;
     self.urlField.keyboardType = UIKeyboardTypeURL;
     self.urlField.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -56,20 +53,17 @@
     [run setTitle:@"CHẠY" forState:UIControlStateNormal];
     [run setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
     run.titleLabel.font = [UIFont boldSystemFontOfSize:16];
-    [run addTarget:self action:@selector(runBypass)
-    forControlEvents:UIControlEventTouchUpInside];
+    [run addTarget:self action:@selector(runBypass) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:run];
 
-    self.statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(16, 166,
-        self.view.bounds.size.width - 32, 24)];
+    self.statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(16, 166, self.view.bounds.size.width - 32, 24)];
     self.statusLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     self.statusLabel.text = @"Sẵn sàng";
     self.statusLabel.textColor = [UIColor colorWithWhite:1 alpha:.65];
     self.statusLabel.font = [UIFont systemFontOfSize:13];
     [self.view addSubview:self.statusLabel];
 
-    self.resultView = [[UITextView alloc] initWithFrame:CGRectMake(16, 196,
-        self.view.bounds.size.width - 32, 70)];
+    self.resultView = [[UITextView alloc] initWithFrame:CGRectMake(16, 196, self.view.bounds.size.width - 32, 70)];
     self.resultView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     self.resultView.editable = NO;
     self.resultView.textColor = UIColor.whiteColor;
@@ -84,8 +78,7 @@
     copy.layer.cornerRadius = 9;
     [copy setTitle:@"COPY" forState:UIControlStateNormal];
     [copy setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
-    [copy addTarget:self action:@selector(copyResult)
-    forControlEvents:UIControlEventTouchUpInside];
+    [copy addTarget:self action:@selector(copyResult) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:copy];
 
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
@@ -104,9 +97,7 @@
 - (void)runBypass {
     [self.view endEditing:YES];
 
-    NSString *s = [self.urlField.text
-        stringByTrimmingCharactersInSet:
-        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *s = [self.urlField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 
     NSURL *target = [NSURL URLWithString:s];
     if (!target || !target.scheme || !target.host) {
@@ -122,9 +113,7 @@
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    NSString *s = [self.urlField.text
-        stringByTrimmingCharactersInSet:
-        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *s = [self.urlField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 
     if (!s.length) return;
 
@@ -150,9 +139,7 @@
 }
 
 - (void)copyResult {
-    NSString *s = [self.resultView.text
-        stringByTrimmingCharactersInSet:
-        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *s = [self.resultView.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 
     if (!s.length) {
         self.statusLabel.text = @"Chưa có kết quả.";
@@ -169,23 +156,37 @@
 
 @end
 
+// Lấy window an toàn cho iOS 13 đến iOS 18
+static UIWindow *getKeyWindow(void) {
+    UIWindow *window = nil;
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+            if (scene.activationState == UISceneActivationStateForegroundActive &&
+                [scene isKindOfClass:[UIWindowScene class]]) {
+                for (UIWindow *w in ((UIWindowScene *)scene).windows) {
+                    if (w.isKeyWindow) { window = w; break; }
+                }
+                if (!window && ((UIWindowScene *)scene).windows.count > 0) {
+                    window = ((UIWindowScene *)scene).windows.firstObject;
+                }
+            }
+            if (window) break;
+        }
+    }
+    if (!window) {
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        window = UIApplication.sharedApplication.keyWindow;
+        #pragma clang diagnostic pop
+    }
+    return window;
+}
+
 void BaconShowMenu(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIWindow *window = nil;
+        UIWindow *window = getKeyWindow();
+        if (!window) return;
 
-        if (@available(iOS 13.0, *)) {
-            for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-                if (scene.activationState == UISceneActivationStateForegroundActive &&
-                    [scene isKindOfClass:[UIWindowScene class]]) {
-                    for (UIWindow *w in ((UIWindowScene *)scene).windows) {
-                        if (w.isKeyWindow) { window = w; break; }
-                    }
-                }
-                if (window) break;
-            }
-        }
-
-        if (!window) window = UIApplication.sharedApplication.keyWindow;
         UIViewController *top = window.rootViewController;
         while (top.presentedViewController) top = top.presentedViewController;
 
@@ -193,4 +194,64 @@ void BaconShowMenu(void) {
         vc.modalPresentationStyle = UIModalPresentationPageSheet;
         [top presentViewController:vc animated:YES completion:nil];
     });
+}
+
+// Lớp nút bấm nổi (Floating Button) có thể kéo thả
+@interface BaconFloatingButton : UIButton
+@end
+
+@implementation BaconFloatingButton
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.backgroundColor = [UIColor colorWithRed:.80 green:0 blue:1 alpha:0.9];
+        [self setTitle:@"B" forState:UIControlStateNormal];
+        [self setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+        self.titleLabel.font = [UIFont boldSystemFontOfSize:22];
+        self.layer.cornerRadius = frame.size.width / 2.0;
+        self.layer.masksToBounds = YES;
+        self.layer.borderWidth = 2.0;
+        self.layer.borderColor = UIColor.whiteColor.CGColor;
+
+        UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
+        [self addGestureRecognizer:pan];
+        [self addTarget:self action:@selector(btnTapped) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return self;
+}
+
+- (void)handlePan:(UIPanGestureRecognizer *)p {
+    UIView *superview = self.superview;
+    if (!superview) return;
+    CGPoint translation = [p translationInView:superview];
+    self.center = CGPointMake(self.center.x + translation.x, self.center.y + translation.y);
+    [p setTranslation:CGPointZero inView:superview];
+}
+
+- (void)btnTapped {
+    BaconShowMenu();
+}
+@end
+
+static void setupFloatingButton(void) {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIWindow *win = getKeyWindow();
+        if (win && ![win viewWithTag:999888]) {
+            BaconFloatingButton *btn = [[BaconFloatingButton alloc] initWithFrame:CGRectMake(20, 150, 48, 48)];
+            btn.tag = 999888;
+            [win addSubview:btn];
+        }
+    });
+}
+
+// Hook tự kích hoạt nút nổi khi ứng dụng khởi chạy
+%hook UIWindow
+- (void)makeKeyAndVisible {
+    %orig;
+    setupFloatingButton();
+}
+%end
+
+%ctor {
+    setupFloatingButton();
 }
