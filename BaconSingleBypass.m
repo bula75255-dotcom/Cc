@@ -156,18 +156,42 @@
 
 @end
 
-// Cửa sổ trong suốt cho phép chạm xuyên qua màn hình game
-@interface BaconTouchThroughWindow : UIWindow
+static UIWindow *overlayWindow = nil;
+
+void BaconShowMenu(void) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIViewController *root = overlayWindow.rootViewController;
+        if (!root) return;
+
+        if (root.presentedViewController) {
+            [root dismissViewControllerAnimated:YES completion:nil];
+            return;
+        }
+
+        BaconViewController *vc = [BaconViewController new];
+        vc.modalPresentationStyle = UIModalPresentationPageSheet;
+        [root presentViewController:vc animated:YES completion:nil];
+    });
+}
+
+// Cho phép cử chỉ chạy song song cùng các thao tác chạm khác của game
+@interface BaconTouchThroughWindow : UIWindow <UIGestureRecognizerDelegate>
 @end
 
 @implementation BaconTouchThroughWindow
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return YES;
+}
+
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     UIView *hitView = [super hitTest:point withEvent:event];
     if (hitView == self || hitView == self.rootViewController.view) {
-        return nil; // Không bấm trúng nút/menu thì nhường thao tác cho Roblox
+        return nil; // Nhường event lại cho Roblox
     }
     return hitView;
 }
+
 @end
 
 @interface BaconFloatingButton : UIButton
@@ -202,16 +226,9 @@
 }
 
 - (void)btnTapped {
-    UIViewController *root = self.window.rootViewController;
-    if (root) {
-        BaconViewController *vc = [BaconViewController new];
-        vc.modalPresentationStyle = UIModalPresentationPageSheet;
-        [root presentViewController:vc animated:YES completion:nil];
-    }
+    BaconShowMenu();
 }
 @end
-
-static BaconTouchThroughWindow *overlayWindow = nil;
 
 static void initOverlay(void) {
     static BOOL created = NO;
@@ -228,31 +245,50 @@ static void initOverlay(void) {
             }
         }
 
+        BaconTouchThroughWindow *customWin = nil;
         if (@available(iOS 13.0, *)) {
             if (activeScene) {
-                overlayWindow = [[BaconTouchThroughWindow alloc] initWithWindowScene:activeScene];
+                customWin = [[BaconTouchThroughWindow alloc] initWithWindowScene:activeScene];
             }
         }
-        if (!overlayWindow) {
-            overlayWindow = [[BaconTouchThroughWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+        if (!customWin) {
+            customWin = [[BaconTouchThroughWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
         }
 
-        overlayWindow.windowLevel = UIWindowLevelAlert + 1000.0;
-        overlayWindow.backgroundColor = [UIColor clearColor];
+        customWin.windowLevel = UIWindowLevelAlert + 1000.0;
+        customWin.backgroundColor = [UIColor clearColor];
+
+        // Cử chỉ: 3 ngón tay click đúp (2 lần)
+        UITapGestureRecognizer *tripleTap = [[UITapGestureRecognizer alloc] initWithTarget:customWin action:@selector(baconGestureTrigger)];
+        tripleTap.numberOfTouchesRequired = 3;
+        tripleTap.numberOfTapsRequired = 2;
+        tripleTap.cancelsTouchesInView = NO;
+        tripleTap.delegate = customWin;
+        [customWin addGestureRecognizer:tripleTap];
 
         UIViewController *rootVC = [UIViewController new];
         rootVC.view.backgroundColor = [UIColor clearColor];
-        overlayWindow.rootViewController = rootVC;
+        customWin.rootViewController = rootVC;
 
         BaconFloatingButton *btn = [[BaconFloatingButton alloc] initWithFrame:CGRectMake(20, 200, 52, 52)];
         [rootVC.view addSubview:btn];
 
-        [overlayWindow setHidden:NO];
+        [customWin setHidden:NO];
+        overlayWindow = customWin;
         created = YES;
     });
 }
 
-// Chạy trực tiếp qua dynamic loader (dyld)
+@interface BaconTouchThroughWindow (GestureAction)
+- (void)baconGestureTrigger;
+@end
+
+@implementation BaconTouchThroughWindow (GestureAction)
+- (void)baconGestureTrigger {
+    BaconShowMenu();
+}
+@end
+
 __attribute__((constructor)) static void entryPoint(void) {
     for (int i = 1; i <= 10; i++) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(i * 1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
