@@ -1,0 +1,8 @@
+Package: com.example.baconsinglebypass
+Name: Bacon Single Bypass
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: UIKit/WebKit single-bypass helper menu.
+Maintainer: User
+Author: User
+Section: Tweaks
