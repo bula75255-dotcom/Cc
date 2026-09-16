@@ -156,7 +156,7 @@
 
 @end
 
-// Lấy window an toàn cho iOS 13 đến iOS 18
+// Lấy UIWindow phù hợp cho cả iOS 13 đến iOS 18
 static UIWindow *getKeyWindow(void) {
     UIWindow *window = nil;
     if (@available(iOS 13.0, *)) {
@@ -196,7 +196,7 @@ void BaconShowMenu(void) {
     });
 }
 
-// Lớp nút bấm nổi (Floating Button) có thể kéo thả
+// Nút bấm tròn nổi có thể kéo thả tự do
 @interface BaconFloatingButton : UIButton
 @end
 
@@ -233,25 +233,27 @@ void BaconShowMenu(void) {
 }
 @end
 
-static void setupFloatingButton(void) {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+static void tryAttachButton(void) {
+    static BOOL attached = NO;
+    if (attached) return;
+
+    dispatch_async(dispatch_get_main_queue(), ^{
         UIWindow *win = getKeyWindow();
         if (win && ![win viewWithTag:999888]) {
-            BaconFloatingButton *btn = [[BaconFloatingButton alloc] initWithFrame:CGRectMake(20, 150, 48, 48)];
+            BaconFloatingButton *btn = [[BaconFloatingButton alloc] initWithFrame:CGRectMake(20, 150, 50, 50)];
             btn.tag = 999888;
             [win addSubview:btn];
+            [win bringSubviewToFront:btn];
+            attached = YES;
         }
     });
 }
 
-// Hook tự kích hoạt nút nổi khi ứng dụng khởi chạy
-%hook UIWindow
-- (void)makeKeyAndVisible {
-    %orig;
-    setupFloatingButton();
-}
-%end
-
-%ctor {
-    setupFloatingButton();
+// Tự kích hoạt chạy ngay khi app load dylib
+__attribute__((constructor)) static void entryPoint(void) {
+    for (int i = 1; i <= 15; i++) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(i * 1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            tryAttachButton();
+        });
+    }
 }
