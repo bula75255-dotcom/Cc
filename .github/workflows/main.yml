@@ -1,0 +1,44 @@
+name: Build Tweak
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          brew install ldid xz
+
+      - name: Setup Theos
+        run: |
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+
+      - name: Setup iOS SDK
+        run: |
+          git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/theos/sdks.git $THEOS/sdks
+          cd $THEOS/sdks
+          git sparse-checkout set --no-cone iPhoneOS16.5.sdk
+          git checkout
+
+      - name: Build package
+        run: |
+          make package FINALPACKAGE=1
+
+      - name: Upload .deb package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tweak-Deb
+          path: packages/*.deb
